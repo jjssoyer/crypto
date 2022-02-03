@@ -1,0 +1,111 @@
+from bs4 import BeautifulSoup
+import pickle
+import requests
+import datetime as dt
+import matplotlib.pyplot as plt
+from matplotlib import style
+import pandas as pd
+import pandas_datareader.data as web
+#from mpl_finance import candlestick_ohlc
+import matplotlib.dates as mdates
+from pandas_datareader import data as pdr
+import re
+import numpy as np
+from collections import Counter
+from datetime import datetime
+
+
+def strategy(coin,intitial_investment,tp,bd):
+    df = pd.read_csv('{}.csv'.format(coin), index_col=0)
+    #print(df.head())
+    df.drop(['symbol', 'open', 'high', 'low', 'Volume {}'.format(coin), 'Volume USDT', 'tradecount'], 1, inplace=True)
+    profit_wallet = 0
+    sell = 0
+    buy = 0
+    counter = 1
+    last_coin_price = 0.00001
+    for index, row in df.iterrows():
+        # date_1 = datetime.utcfromtimestamp(index).strftime('%Y-%m-%d %H:%M:%S')
+        #print("Previous price", last_coin_price, "Current price", row['close']," % change", ((((row['close']/last_coin_price)-1))*100))
+        if counter == 1:
+            #print("date = ", index)
+
+            Coin_in_hand = (intitial_investment / row['close'])
+            HOLD_coins = Coin_in_hand
+            #print("Trade ", counter, 'purchased bitcoin at ', row['close'], '$ investment 1000$, coin purchased =', Coin_in_hand,
+                  #'{}'.format(coin))
+            last_coin_price = row['close']
+            counter += 1
+            HOLD_FIRSTPRICE = row['close']
+        #print(row['close'], tp * last_coin_price, sell )
+        if row['close'] > tp * last_coin_price and sell != 2:
+            #print("date = ", index)
+
+            #print("There has been a {}% increase in bitcoin price,".format((tp-1)*100))
+            #print('last price = ',last_coin_price, ' price now = ', row['close'])
+            #print("Trade", counter, " is sell (take profit {}%) ".format(abs((100-(tp-1)*100)/2)))
+            #print("profit wallet =",profit_wallet, "+ ( ", Coin_in_hand, " x  ",  row['close'],") x ",((100-((tp-1)*100)/2)),"%  =", (Coin_in_hand * row['close']) * (1-((tp - 1) / 2)))
+            profit_wallet = profit_wallet + (Coin_in_hand * row['close']) * (1-((tp - 1) / 2))
+            #print("coin wallet =", Coin_in_hand * ((tp - 1) / 2))
+            Coin_in_hand = Coin_in_hand * ((tp - 1) / 2)
+            last_coin_price = row['close']
+            counter += 1
+            sell += 1
+
+        if row['close'] < bd * last_coin_price and profit_wallet != 0:
+            #print("date = ", index)
+            #print("There has been a {}% decrease in bitcoin price,".format(abs((bd - 1) * 100)))
+            #print('last price = ', last_coin_price, ' price now = ', row['close'])
+            #print("Trade", counter, " is buy dip {}% ".format(abs(((bd - 1) * 100) / 2)))
+
+            if profit_wallet > 0.1:
+                #print("profit wallet =", profit_wallet, "/", "2"" = ", profit_wallet / 2)
+                profit_wallet = profit_wallet/2
+                #print("coin wallet =", Coin_in_hand + (profit_wallet*(1/row['close'])))
+                Coin_in_hand = Coin_in_hand + (profit_wallet*(1/row['close']))
+
+            last_coin_price = row['close']
+            counter += 1
+            if sell != 0:
+                sell -=1
+            last_coin_price = row['close']
+        else:
+            Last_price = row['close']
+    print("{} coin".format(coin))
+    print("Buy the dip sell the tip strategy result --->", profit_wallet + (Coin_in_hand * Last_price),"$")
+    print("HODL strategy result in --->",  (Coin_in_hand * (Last_price-HOLD_FIRSTPRICE)),"$")
+    print("Percentage difference =", (abs(((profit_wallet + (Coin_in_hand * Last_price)-(Coin_in_hand * (Last_price-HOLD_FIRSTPRICE))))/(Coin_in_hand * (Last_price-HOLD_FIRSTPRICE))))*100,"%")
+    print("--------------------------------------------------------------------------------------------------")
+    # print("---> ", Coin_in_hand+(profit_wallet*(1/Last_price)))'''
+    '''print("{} coins available in wallet = ".format(coin))
+        print("---> ", HOLD_coins)'''
+
+intitial_investment = float(input("Enter the amount in USD you would like to invest >"))
+take_profit_strategy = float(input("Enter the take profit percentage (1/2 of that % will be removed >"))
+take_profit_strategy = (take_profit_strategy/100)+1
+buy_dip_strategy = float(input("Enter the buy dip percentage (1/2 of that % will be reinvested >"))
+buy_dip_strategy = 1-(buy_dip_strategy/100)
+coins = ["AAVE", "ADA", "BNB", "BTC", "ETH", "LINK", "LTC", "NEO", "ONE", "SOL", "XRP"]
+
+'''coin_name = input("Enter the coin you would want to invest in"
+                  "1. AAVE \n"
+                  "2. ADA \n"
+                  "3. BNB \n"
+                  "4. BTC \n"
+                  "5. ETH \n"
+                  "6. LINK \n"
+                  "7. LTC \n"
+                  "8. NEO \n"
+                  "9. ONE \n"
+                  "10.SOL \n"
+                  "11.XRP \n  >")
+coin_name = coin_name.upper()'''
+
+for i in coins:
+    strategy(i,intitial_investment, take_profit_strategy, buy_dip_strategy)
+
+
+
+
+
+
